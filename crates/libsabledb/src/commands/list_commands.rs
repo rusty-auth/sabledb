@@ -6,8 +6,8 @@ use crate::{
         ListLenResult, ListPopResult, ListPushResult, ListRangeResult, ListRemoveResult,
         ListTrimResult,
     },
-    to_number, BlockClientResult, BytesMutUtils, LockManager, RespBuilderV2, SableError,
-    ValkeyCommand, ValkeyCommandName,
+    BlockClientResult, BytesMutUtils, LockManager, RespBuilderV2, SableError, ValkeyCommand,
+    ValkeyCommandName,
 };
 use bytes::BytesMut;
 use std::rc::Rc;

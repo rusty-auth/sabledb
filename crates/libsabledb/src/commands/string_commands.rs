@@ -6,13 +6,11 @@ use crate::{
 };
 
 use crate::{
-    check_args_count, command_arg_at, command_arg_at_as_str,
     commands::SetFlags,
     commands::{HandleCommandResult, Strings},
-    parse_string_to_number,
     storage::PutFlags,
-    to_number, to_number_ex, BytesMutUtils, LockManager, RespBuilderV2, SableError, StringUtils,
-    StringValueMetadata, Telemetry, ValkeyCommand, ValkeyCommandName,
+    BytesMutUtils, LockManager, RespBuilderV2, SableError, StringUtils, StringValueMetadata,
+    Telemetry, ValkeyCommand, ValkeyCommandName,
 };
 
 use bytes::BytesMut;

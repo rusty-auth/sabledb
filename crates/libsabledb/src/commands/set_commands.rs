@@ -1,5 +1,4 @@
 use crate::{
-    check_args_count, command_arg_at,
     commands::{HandleCommandResult, Strings},
     metadata::SetMemberKey,
     server::ClientState,
