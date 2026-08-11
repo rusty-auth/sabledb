@@ -465,6 +465,7 @@ impl Client {
         command: Rc<ValkeyCommand>,
         tx: &mut (impl AsyncWriteExt + std::marker::Unpin),
     ) -> Result<ClientNextAction, SableError> {
+        let _command_duration = crate::stopwatch::CommandDurationStopWatch::default();
         {
             // In principal, can we handle this command?
             let mut resp_writer = RespWriter::new(tx, 128, client_state.clone());

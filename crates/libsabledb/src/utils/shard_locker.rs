@@ -105,6 +105,7 @@ impl LockManager {
         client_state: Rc<ClientState>,
         command: Rc<ValkeyCommand>,
     ) -> Result<ShardLockGuard<'a>, SableError> {
+        let _lock_duration = crate::stopwatch::LockAcquisitionDurationStopWatch::default();
         if command.metadata().is_write_command() {
             Self::lock_internal_key_exclusive(user_key, client_state).await
         } else {
@@ -119,6 +120,7 @@ impl LockManager {
         client_state: Rc<ClientState>,
         command: Rc<ValkeyCommand>,
     ) -> Result<ShardLockGuard<'a>, SableError> {
+        let _lock_duration = crate::stopwatch::LockAcquisitionDurationStopWatch::default();
         if command.metadata().is_write_command() {
             Self::lock_multi_internal_keys_exclusive(user_keys, client_state).await
         } else {

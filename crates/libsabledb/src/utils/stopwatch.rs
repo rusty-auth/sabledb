@@ -9,6 +9,16 @@ pub struct IoDurationStopWatch {
     stop_watch: StopWatch,
 }
 
+#[derive(Default)]
+pub struct CommandDurationStopWatch {
+    stop_watch: StopWatch,
+}
+
+#[derive(Default)]
+pub struct LockAcquisitionDurationStopWatch {
+    stop_watch: StopWatch,
+}
+
 impl StopWatch {
     fn now_as_micros() -> Result<u128, SableError> {
         let Ok(timestamp_micros) =
@@ -39,6 +49,22 @@ impl Drop for IoDurationStopWatch {
     fn drop(&mut self) {
         if let Ok(elapsed) = self.stop_watch.elapsed_micros() {
             Telemetry::inc_total_io_duration(elapsed);
+        }
+    }
+}
+
+impl Drop for CommandDurationStopWatch {
+    fn drop(&mut self) {
+        if let Ok(elapsed) = self.stop_watch.elapsed_micros() {
+            Telemetry::inc_total_command_duration(elapsed);
+        }
+    }
+}
+
+impl Drop for LockAcquisitionDurationStopWatch {
+    fn drop(&mut self) {
+        if let Ok(elapsed) = self.stop_watch.elapsed_micros() {
+            Telemetry::inc_total_lock_acquisition_duration(elapsed);
         }
     }
 }
