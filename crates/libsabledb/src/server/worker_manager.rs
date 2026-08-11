@@ -27,11 +27,20 @@ impl WorkerManager {
         store: StorageAdapter,
         server_state: Arc<ServerState>,
     ) -> Result<Self, SableError> {
-        let core_ids = if cfg!(not(target_os = "macos")) {
+        let pin_workers = server_state
+            .options()
+            .read()
+            .expect("Failed to obtain read lock on ServerOptions")
+            .general_settings
+            .pin_workers;
+        let core_ids = if pin_workers && cfg!(not(target_os = "macos")) {
             core_affinity::get_core_ids()
         } else {
             None
         };
+        if !pin_workers {
+            tracing::info!("Worker CPU affinity is disabled");
+        }
         let count = match &core_ids {
             Some(core_ids) => std::cmp::min(core_ids.len(), count),
             None => count,

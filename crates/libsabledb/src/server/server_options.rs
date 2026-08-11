@@ -17,6 +17,10 @@ pub struct GeneralSettings {
     pub cluster_address: Option<String>,
     /// Server workers count. set to 0 to let SableDB decide
     pub workers: usize,
+    /// Pin worker threads to individual host cores. Dedicated hosts can benefit,
+    /// while shared or quota-based container platforms should leave workers
+    /// unpinned so the kernel can schedule them across the allowed CPU set.
+    pub pin_workers: bool,
     /// Database log level
     pub log_level: tracing::Level,
     /// Path to the service certification path
@@ -37,6 +41,7 @@ impl Default for GeneralSettings {
         GeneralSettings {
             public_address: "127.0.0.1:6379".to_string(),
             workers: 0,
+            pin_workers: true,
             log_level: tracing::Level::INFO,
             cert: None,
             key: None,
@@ -500,6 +505,12 @@ impl ServerOptions {
             "workers",
             &mut options.general_settings.workers,
         )?;
+        Self::read_bool(
+            &ini_file,
+            "general",
+            "pin_workers",
+            &mut options.general_settings.pin_workers,
+        )?;
 
         Self::read_log_level(
             &ini_file,
@@ -763,5 +774,15 @@ mod tests {
             options.open_params.rocksdb.block_cache_size,
             512 * 1024 * 1024
         );
+    }
+
+    #[test]
+    fn reads_worker_affinity_setting() {
+        let config = crate::io::TempFile::with_name("worker_affinity_options");
+        std::fs::write(config.fullpath(), "[general]\npin_workers = false\n").unwrap();
+
+        let options = ServerOptions::from_config(config.fullpath().clone()).unwrap();
+
+        assert!(!options.general_settings.pin_workers);
     }
 }
