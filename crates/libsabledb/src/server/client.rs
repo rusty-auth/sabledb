@@ -467,6 +467,8 @@ impl Client {
     ) -> Result<ClientNextAction, SableError> {
         let _command_duration = crate::stopwatch::CommandDurationStopWatch::default();
         {
+            let _command_preflight_duration =
+                crate::stopwatch::CommandPreflightDurationStopWatch::default();
             // In principal, can we handle this command?
             let mut resp_writer = RespWriter::new(tx, 128, client_state.clone());
             match Self::pre_handle_command(client_state.clone(), command.clone()) {
@@ -584,6 +586,8 @@ impl Client {
             | ValkeyCommandName::Strlen
             | ValkeyCommandName::Substr
             | ValkeyCommandName::Delifeq => {
+                let _string_command_duration =
+                    crate::stopwatch::StringCommandDurationStopWatch::default();
                 match StringCommands::handle_command(client_state.clone(), command.clone(), tx)
                     .await?
                 {

@@ -29,6 +29,16 @@ pub struct ResponseWriteDurationStopWatch {
     stop_watch: StopWatch,
 }
 
+#[derive(Default)]
+pub struct CommandPreflightDurationStopWatch {
+    stop_watch: StopWatch,
+}
+
+#[derive(Default)]
+pub struct StringCommandDurationStopWatch {
+    stop_watch: StopWatch,
+}
+
 impl StopWatch {
     fn now_as_micros() -> Result<u128, SableError> {
         let Ok(timestamp_micros) =
@@ -91,6 +101,22 @@ impl Drop for ResponseWriteDurationStopWatch {
     fn drop(&mut self) {
         if let Ok(elapsed) = self.stop_watch.elapsed_micros() {
             Telemetry::inc_total_response_write_duration(elapsed);
+        }
+    }
+}
+
+impl Drop for CommandPreflightDurationStopWatch {
+    fn drop(&mut self) {
+        if let Ok(elapsed) = self.stop_watch.elapsed_micros() {
+            Telemetry::inc_total_command_preflight_duration(elapsed);
+        }
+    }
+}
+
+impl Drop for StringCommandDurationStopWatch {
+    fn drop(&mut self) {
+        if let Ok(elapsed) = self.stop_watch.elapsed_micros() {
+            Telemetry::inc_total_string_command_duration(elapsed);
         }
     }
 }

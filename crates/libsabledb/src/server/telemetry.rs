@@ -194,6 +194,14 @@ pub struct Telemetry {
     pub total_response_write_duration: u128,
     /// Total number of measured command response writes
     pub total_response_write_duration_calls: u128,
+    /// Total number of microseconds spent in command preflight checks
+    pub total_command_preflight_duration: u128,
+    /// Total number of measured command preflight checks
+    pub total_command_preflight_duration_calls: u128,
+    /// Total number of microseconds spent dispatching string commands
+    pub total_string_command_duration: u128,
+    /// Total number of measured string-command dispatches
+    pub total_string_command_duration_calls: u128,
     /// Total number of microseconds spent doing Disk IO
     pub total_io_duration: u128,
     /// Total number of IO write calls
@@ -268,6 +276,32 @@ impl Telemetry {
                 .saturating_add(duration_micros);
             telemetry.total_response_write_duration_calls = telemetry
                 .total_response_write_duration_calls
+                .saturating_add(1);
+        });
+    }
+
+    /// Record one command preflight duration.
+    pub fn inc_total_command_preflight_duration(duration_micros: u128) {
+        WORKER_TELEMETRY.with(|telemetry| {
+            let mut telemetry = telemetry.borrow_mut();
+            telemetry.total_command_preflight_duration = telemetry
+                .total_command_preflight_duration
+                .saturating_add(duration_micros);
+            telemetry.total_command_preflight_duration_calls = telemetry
+                .total_command_preflight_duration_calls
+                .saturating_add(1);
+        });
+    }
+
+    /// Record one complete string-command dispatch duration.
+    pub fn inc_total_string_command_duration(duration_micros: u128) {
+        WORKER_TELEMETRY.with(|telemetry| {
+            let mut telemetry = telemetry.borrow_mut();
+            telemetry.total_string_command_duration = telemetry
+                .total_string_command_duration
+                .saturating_add(duration_micros);
+            telemetry.total_string_command_duration_calls = telemetry
+                .total_string_command_duration_calls
                 .saturating_add(1);
         });
     }
@@ -375,6 +409,12 @@ impl Telemetry {
             telemetry.borrow_mut().total_string_get_duration_calls = 0;
             telemetry.borrow_mut().total_response_write_duration = 0;
             telemetry.borrow_mut().total_response_write_duration_calls = 0;
+            telemetry.borrow_mut().total_command_preflight_duration = 0;
+            telemetry
+                .borrow_mut()
+                .total_command_preflight_duration_calls = 0;
+            telemetry.borrow_mut().total_string_command_duration = 0;
+            telemetry.borrow_mut().total_string_command_duration_calls = 0;
             telemetry.borrow_mut().total_io_read_calls = 0;
             telemetry.borrow_mut().total_io_write_calls = 0;
             telemetry.borrow_mut().total_io_duration = 0;
@@ -424,6 +464,18 @@ impl Telemetry {
         self.total_response_write_duration_calls = self
             .total_response_write_duration_calls
             .saturating_add(worker_telemetry.total_response_write_duration_calls);
+        self.total_command_preflight_duration = self
+            .total_command_preflight_duration
+            .saturating_add(worker_telemetry.total_command_preflight_duration);
+        self.total_command_preflight_duration_calls = self
+            .total_command_preflight_duration_calls
+            .saturating_add(worker_telemetry.total_command_preflight_duration_calls);
+        self.total_string_command_duration = self
+            .total_string_command_duration
+            .saturating_add(worker_telemetry.total_string_command_duration);
+        self.total_string_command_duration_calls = self
+            .total_string_command_duration_calls
+            .saturating_add(worker_telemetry.total_string_command_duration_calls);
         self.total_io_write_calls = self
             .total_io_write_calls
             .saturating_add(worker_telemetry.total_io_write_calls);
@@ -463,6 +515,18 @@ impl std::fmt::Display for Telemetry {
         let avg_response_write_duration = if self.total_response_write_duration_calls > 0 {
             self.total_response_write_duration as f64
                 / self.total_response_write_duration_calls as f64
+        } else {
+            0f64
+        };
+        let avg_command_preflight_duration = if self.total_command_preflight_duration_calls > 0 {
+            self.total_command_preflight_duration as f64
+                / self.total_command_preflight_duration_calls as f64
+        } else {
+            0f64
+        };
+        let avg_string_command_duration = if self.total_string_command_duration_calls > 0 {
+            self.total_string_command_duration as f64
+                / self.total_string_command_duration_calls as f64
         } else {
             0f64
         };
@@ -520,6 +584,30 @@ impl std::fmt::Display for Telemetry {
         lines.push(format!(
             "avg_response_write_duration_micros:{}",
             avg_response_write_duration
+        ));
+        lines.push(format!(
+            "total_command_preflight_duration_micros:{}",
+            self.total_command_preflight_duration
+        ));
+        lines.push(format!(
+            "total_command_preflight_duration_calls:{}",
+            self.total_command_preflight_duration_calls
+        ));
+        lines.push(format!(
+            "avg_command_preflight_duration_micros:{}",
+            avg_command_preflight_duration
+        ));
+        lines.push(format!(
+            "total_string_command_duration_micros:{}",
+            self.total_string_command_duration
+        ));
+        lines.push(format!(
+            "total_string_command_duration_calls:{}",
+            self.total_string_command_duration_calls
+        ));
+        lines.push(format!(
+            "avg_string_command_duration_micros:{}",
+            avg_string_command_duration
         ));
 
         lines.push("\n# Network".to_string());
