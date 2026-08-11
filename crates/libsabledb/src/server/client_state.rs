@@ -252,6 +252,7 @@ impl ClientState {
 
     /// Discard the transaction state for this client
     pub fn discard_transaction(&self) {
+        self.store_with_cache.discard_transaction();
         self.enable_client_flag(ClientStateFlags::TXN_MULTI, false);
         self.enable_client_flag(ClientStateFlags::TXN_CALC_SLOTS, false);
         self.enable_client_flag(ClientStateFlags::TXN_EXEC, false);

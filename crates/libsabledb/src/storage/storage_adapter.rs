@@ -607,7 +607,21 @@ impl StorageAdapter {
         };
 
         let updates = txn.to_write_batch();
-        db.apply_batch(&updates)
+        db.apply_batch(&updates)?;
+        txn.clear();
+        Ok(())
+    }
+
+    /// Discard every uncommitted write buffered by this transaction adapter.
+    ///
+    /// A client reuses its transaction adapter across MULTI/EXEC blocks. The
+    /// cache therefore has to be cleared after both successful commits and
+    /// abandoned transactions; otherwise a later transaction can replay stale
+    /// writes that were committed or discarded previously.
+    pub fn discard_transaction(&self) {
+        if let Some(txn) = &self.txn {
+            txn.clear();
+        }
     }
 
     /// Delete keys ranging from `[start, end)` (including `start` excluding `end`) from the database.
@@ -742,6 +756,53 @@ mod tests {
         let seq1 = store.generate_id();
         let seq2 = store.generate_id();
         assert!(seq2 > seq1);
+        Ok(())
+    }
+
+    #[test]
+    fn committed_transaction_writes_are_not_replayed() -> Result<(), SableError> {
+        let store = default_store("committed_transaction_writes_are_not_replayed")?;
+        let transaction = store.transaction();
+        let first_key = BytesMut::from("first");
+        let second_key = BytesMut::from("second");
+
+        transaction.put(&first_key, &BytesMut::from("old"), PutFlags::Override)?;
+        transaction.commit()?;
+        store.put(&first_key, &BytesMut::from("new"), PutFlags::Override)?;
+
+        transaction.put(&second_key, &BytesMut::from("value"), PutFlags::Override)?;
+        transaction.commit()?;
+
+        assert_eq!(store.get(&first_key)?, Some(BytesMut::from("new")));
+        assert_eq!(store.get(&second_key)?, Some(BytesMut::from("value")));
+        Ok(())
+    }
+
+    #[test]
+    fn discarded_transaction_writes_are_not_committed_later() -> Result<(), SableError> {
+        let store = default_store("discarded_transaction_writes_are_not_committed_later")?;
+        let transaction = store.transaction();
+        let discarded_key = BytesMut::from("discarded");
+        let committed_key = BytesMut::from("committed");
+
+        transaction.put(
+            &discarded_key,
+            &BytesMut::from("must-not-persist"),
+            PutFlags::Override,
+        )?;
+        transaction.discard_transaction();
+        transaction.put(
+            &committed_key,
+            &BytesMut::from("persisted"),
+            PutFlags::Override,
+        )?;
+        transaction.commit()?;
+
+        assert_eq!(store.get(&discarded_key)?, None);
+        assert_eq!(
+            store.get(&committed_key)?,
+            Some(BytesMut::from("persisted"))
+        );
         Ok(())
     }
 
