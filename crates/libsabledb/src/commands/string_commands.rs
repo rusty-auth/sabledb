@@ -216,6 +216,7 @@ impl StringCommands {
         command: Rc<ValkeyCommand>,
         response_buffer: &mut BytesMut,
     ) -> Result<(), SableError> {
+        let _string_get_duration = crate::stopwatch::StringGetDurationStopWatch::default();
         let builder = RespBuilderV2::default();
         check_args_count!(command, 2, response_buffer);
         let key = command_arg_at!(command, 1);

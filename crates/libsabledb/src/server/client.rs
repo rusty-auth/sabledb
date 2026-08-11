@@ -881,6 +881,7 @@ impl Client {
         buffer: &BytesMut,
         client_id: u128,
     ) -> Result<(), SableError> {
+        let _response_write_duration = crate::stopwatch::ResponseWriteDurationStopWatch::default();
         tx.write_all(buffer).await?;
         if log_enabled!(Level::Debug) {
             ClientState::static_debug(

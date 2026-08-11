@@ -186,6 +186,14 @@ pub struct Telemetry {
     pub total_lock_acquisition_duration: u128,
     /// Total number of measured command lock acquisitions
     pub total_lock_acquisition_calls: u128,
+    /// Total number of microseconds spent processing string GET commands
+    pub total_string_get_duration: u128,
+    /// Total number of measured string GET commands
+    pub total_string_get_duration_calls: u128,
+    /// Total number of microseconds spent writing command responses
+    pub total_response_write_duration: u128,
+    /// Total number of measured command response writes
+    pub total_response_write_duration_calls: u128,
     /// Total number of microseconds spent doing Disk IO
     pub total_io_duration: u128,
     /// Total number of IO write calls
@@ -236,6 +244,31 @@ impl Telemetry {
                 .saturating_add(duration_micros);
             telemetry.total_lock_acquisition_calls =
                 telemetry.total_lock_acquisition_calls.saturating_add(1);
+        });
+    }
+
+    /// Record one string GET processing duration.
+    pub fn inc_total_string_get_duration(duration_micros: u128) {
+        WORKER_TELEMETRY.with(|telemetry| {
+            let mut telemetry = telemetry.borrow_mut();
+            telemetry.total_string_get_duration = telemetry
+                .total_string_get_duration
+                .saturating_add(duration_micros);
+            telemetry.total_string_get_duration_calls =
+                telemetry.total_string_get_duration_calls.saturating_add(1);
+        });
+    }
+
+    /// Record one command response-write duration.
+    pub fn inc_total_response_write_duration(duration_micros: u128) {
+        WORKER_TELEMETRY.with(|telemetry| {
+            let mut telemetry = telemetry.borrow_mut();
+            telemetry.total_response_write_duration = telemetry
+                .total_response_write_duration
+                .saturating_add(duration_micros);
+            telemetry.total_response_write_duration_calls = telemetry
+                .total_response_write_duration_calls
+                .saturating_add(1);
         });
     }
 
@@ -338,6 +371,10 @@ impl Telemetry {
             telemetry.borrow_mut().total_command_duration_calls = 0;
             telemetry.borrow_mut().total_lock_acquisition_duration = 0;
             telemetry.borrow_mut().total_lock_acquisition_calls = 0;
+            telemetry.borrow_mut().total_string_get_duration = 0;
+            telemetry.borrow_mut().total_string_get_duration_calls = 0;
+            telemetry.borrow_mut().total_response_write_duration = 0;
+            telemetry.borrow_mut().total_response_write_duration_calls = 0;
             telemetry.borrow_mut().total_io_read_calls = 0;
             telemetry.borrow_mut().total_io_write_calls = 0;
             telemetry.borrow_mut().total_io_duration = 0;
@@ -375,6 +412,18 @@ impl Telemetry {
         self.total_lock_acquisition_calls = self
             .total_lock_acquisition_calls
             .saturating_add(worker_telemetry.total_lock_acquisition_calls);
+        self.total_string_get_duration = self
+            .total_string_get_duration
+            .saturating_add(worker_telemetry.total_string_get_duration);
+        self.total_string_get_duration_calls = self
+            .total_string_get_duration_calls
+            .saturating_add(worker_telemetry.total_string_get_duration_calls);
+        self.total_response_write_duration = self
+            .total_response_write_duration
+            .saturating_add(worker_telemetry.total_response_write_duration);
+        self.total_response_write_duration_calls = self
+            .total_response_write_duration_calls
+            .saturating_add(worker_telemetry.total_response_write_duration_calls);
         self.total_io_write_calls = self
             .total_io_write_calls
             .saturating_add(worker_telemetry.total_io_write_calls);
@@ -403,6 +452,17 @@ impl std::fmt::Display for Telemetry {
         };
         let avg_lock_acquisition_duration = if self.total_lock_acquisition_calls > 0 {
             self.total_lock_acquisition_duration as f64 / self.total_lock_acquisition_calls as f64
+        } else {
+            0f64
+        };
+        let avg_string_get_duration = if self.total_string_get_duration_calls > 0 {
+            self.total_string_get_duration as f64 / self.total_string_get_duration_calls as f64
+        } else {
+            0f64
+        };
+        let avg_response_write_duration = if self.total_response_write_duration_calls > 0 {
+            self.total_response_write_duration as f64
+                / self.total_response_write_duration_calls as f64
         } else {
             0f64
         };
@@ -436,6 +496,30 @@ impl std::fmt::Display for Telemetry {
         lines.push(format!(
             "avg_lock_acquisition_duration_micros:{}",
             avg_lock_acquisition_duration
+        ));
+        lines.push(format!(
+            "total_string_get_duration_micros:{}",
+            self.total_string_get_duration
+        ));
+        lines.push(format!(
+            "total_string_get_duration_calls:{}",
+            self.total_string_get_duration_calls
+        ));
+        lines.push(format!(
+            "avg_string_get_duration_micros:{}",
+            avg_string_get_duration
+        ));
+        lines.push(format!(
+            "total_response_write_duration_micros:{}",
+            self.total_response_write_duration
+        ));
+        lines.push(format!(
+            "total_response_write_duration_calls:{}",
+            self.total_response_write_duration_calls
+        ));
+        lines.push(format!(
+            "avg_response_write_duration_micros:{}",
+            avg_response_write_duration
         ));
 
         lines.push("\n# Network".to_string());
